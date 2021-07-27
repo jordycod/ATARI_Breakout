@@ -1,0 +1,260 @@
+//Classes.
+Bola Bola;
+Barra Barra;
+Blocos[][] Blocos;
+
+//Elementos gráficos.
+int linhas, colunas, Pontos, vidas, corTexto, corFundo, corElementos; 
+
+void setup() {
+  size(900, 600);
+  textAlign(CENTER);
+  textSize(height/40);
+  noStroke();
+
+  // Atributos gráficos básicos.
+  corElementos = 250;
+  corTexto = 200;
+  corFundo = 20;
+  Pontos = 0;
+  vidas = 3;  
+  linhas = 3;
+  colunas = 10;
+  mostraCenario(colunas, linhas);
+}
+
+void draw() {
+  background(corFundo);
+
+  Bola.desenha();
+  Bola.checaBarra(Barra);
+  Barra.desenha();
+  mostrarBlocos(); 
+  mostraCenario();
+}
+
+class Barra {
+  float xBarra, yBarra, wBarra, hBarra;
+  
+  Barra() {
+    wBarra = height/4;
+    hBarra = height/40;
+    xBarra = width/2;
+    yBarra = height - height/10;
+  }
+
+  void desenha() {
+    rectMode(CENTER);
+    xBarra = mouseX; 
+
+    if (mouseX >= width - wBarra/2) { //Limite de movimento da barra à direita.
+      xBarra = width - wBarra/2;
+    } 
+    if (mouseX <= wBarra/2) { //Limite de movimento da barra à esquerda.
+      xBarra = wBarra/2;
+    }
+
+    fill(corElementos);
+    rect(xBarra, yBarra, wBarra, hBarra, 3); 
+
+    rectMode(CORNER);
+  }
+}
+
+class Blocos {
+  float x, y, w, h;
+  int numBlocos;
+  boolean status;
+
+  Blocos(int colunas, int linhas, int QuantBlocos) {
+    numBlocos = QuantBlocos;
+    w = (width / numBlocos) - width/400;
+    h = height/20;
+    x = (w * colunas)+ width/80;
+    y = h * linhas;
+    status = true;
+  }
+
+  void desenha() {
+
+    if (status) {
+      rectMode(CENTER);
+      fill(corElementos);
+      rect(x+w/2, y, w-w/5, h-h/2, 2);
+    }
+  }
+
+  void checaBola(Bola Bola) {
+    if (status) {
+      //Baixo
+      if (Bola.xBola > x && Bola.xBola < x+w && Bola.yBola < (y+h+Bola.diamBola)&& Bola.yBola>y+h) {
+        Bola.Vy*=-1;
+        status=false;
+        Pontos++;
+      }
+      //Cima
+      if (Bola.xBola > x && Bola.xBola < x+w && Bola.yBola > y-Bola.diamBola && Bola.yBola < y) {
+        Bola.Vy*=-1;
+        status=false;
+        Pontos++;
+      }
+      //Esquerda
+      if (Bola.xBola > x - Bola.diamBola && Bola.yBola > y && Bola.yBola < y+h && Bola.xBola < x) {
+        Bola.Vx*=-1;
+        status=false;
+        Pontos++;
+      }
+      //Direita
+      if (Bola.xBola > x+w  && Bola.yBola > y && Bola.yBola < y+h && Bola.xBola<x+w+Bola.diamBola) {
+        Bola.Vx*=-1;
+        status=false;
+        Pontos++;
+      }
+    }
+  }
+}
+
+class Bola {
+  float xBola, yBola, Vx, Vy, diamBola;
+  boolean iniciar;
+  int pontMaxima = linhas * colunas;
+
+  Bola() { //Atributos da função Bola.
+    diamBola = height/35;
+    xBola = width/2;
+    yBola = height/10 *9 - diamBola;
+
+    Vx = random(-5, 5);
+    Vy = -10;
+    iniciar = false;
+  }
+
+  void desenha () {
+    fill(corElementos);
+    ellipse(xBola, yBola, diamBola, diamBola);
+
+    if (iniciar) { //Incremento nas velocidades de X e Y da bola.
+      xBola += Vx;
+      yBola += Vy;
+
+      //Colisão nas bordas da desenha.
+      if (xBola < diamBola/2) { //Esquerda.
+        Vx *= -1;
+        xBola = diamBola/2;
+      }      
+      if (xBola > width-diamBola/2) { //Direita.
+        Vx *= -1;
+        xBola = width-diamBola/2;
+      }
+      if (yBola < diamBola/2) { //Cima.
+        Vy *= -1;
+      } else if (yBola > Barra.yBarra + 1.5*diamBola) { //Baixo (bola fora). Reiniciar.
+        iniciar = false;
+        yBola = Barra.yBarra - diamBola;
+        vidas--;
+      }
+    } else {
+      xBola = mouseX;
+    }
+    
+    //Mensagem de encerramento quando a pontuação máxima é atingida.
+    if (Pontos == pontMaxima) { 
+      fill(corTexto);
+      text("PARABÉNS! VOCÊ ATINGIU A PONTUAÇÃO MÁXIMA!", width/2, height/2.3);
+      text("PONTUAÇÃO: " + Pontos, width/2, height/2);
+      xBola = mouseX;
+      yBola = height/10 *9 - diamBola;
+    }
+  }
+
+  void checaBarra(Barra Barra) {
+
+    //Condições para colisão com a barra.
+    if (xBola > Barra.xBarra - Barra.wBarra/2 && xBola < Barra.xBarra + Barra.wBarra/2 && yBola > Barra.yBarra - diamBola && yBola < Barra.yBarra+diamBola/10) {
+
+      //Variações de velocidade de acordo com o ponto de colisão na barra.
+      Vx += (xBola - mouseX)/10;
+
+      if (Vx > 5) {
+        Vx = 5;
+      }
+      if (Vx < -5) {
+        Vx = -5;
+      }
+      if (Vx < 0) {
+        Vy = -15 - Vx;
+      } 
+      if (Vx > 0) {
+        Vy = -15 + Vx;
+      }
+    }
+  }
+}
+
+void mostraCenario() {
+
+  rectMode(CORNER);
+  strokeWeight(height/40);
+  stroke(corElementos);
+  noFill();
+  rect(0, 0, width, height);
+  strokeWeight(0);
+
+  //Título
+  fill(corTexto);
+  text("BREAKOUT - ATARI, BY JORDY MUNIZ", width/2, height-height/30);
+
+  //Pontuação no canto inferior direito da tela.
+  fill(corTexto);
+  text("PONTOS: " + Pontos, width/10*9, height-height/30);
+
+  //Contador de vidas no canto inferior esquerdo da tela.
+  fill(corTexto);  
+  text("VIDAS: " + vidas, width/10, height-height/30);
+
+  if (vidas == 0) { //Condição para mensagem de fim de jogo, caso as vidas cheguem a zero.
+    fill(corTexto);  
+    text("SUAS VIDAS ACABARAM!", width/2, height/2.3);
+    text("CLIQUE EM QUALQUER LUGAR PARA REINICIAR.", width/2, height/2);
+  }
+}
+
+void mostrarBlocos() { //Relação da posição dos blocos e da bolinha para obter as colisões.
+  for (int i = 0; i < Blocos.length; i++) {
+    for (int j = 0; j < Blocos[0].length; j++) {
+      Blocos[i][j].desenha();
+      Blocos[i][j].checaBola(Bola);
+    }
+  }
+}
+
+void mostraCenario(int linhas, int colunas) { //Desenho dos elementos na tela (bola, barra e blocos).
+  Bola = new Bola();
+  Barra = new Barra();
+  Blocos = new Blocos[linhas][colunas];
+  for (int i = 0; i < Blocos.length; i++) {
+    for (int j = 0; j < Blocos[0].length; j++) {
+      Blocos[i][j] = new Blocos(i, j+2, Blocos.length);
+    }
+  }
+}
+
+boolean limpaBlocos() { //Remoção de blocos após colisão com a bolinha.
+  for (int i = 0; i < Blocos.length; i++) {
+    for (int j = 0; j < Blocos[0].length; j++) {
+      if (Blocos[i][j].status) { //No objeto "Blocos" existe uma variável booleana "status" que, enquanto "true" exibe os blocos. Após a colisão, muda para "false" e o bloco some.
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void mousePressed() {
+  if (vidas > 0) { //Condição para reinício de jogo.
+    Bola.yBola -= 10;
+    Bola.iniciar = true;
+  } else {
+    setup();
+  }
+}
